@@ -4,6 +4,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 
+user_id = input("Enter your name or ID: ")
+
 scenarios = [
     {
         "id": 1,
@@ -180,9 +182,11 @@ def virtue_ethics_decision(scenario):
     """Virtue ethics: act according to compassion and moral character."""
     return scenario["options"][0] 
 
+
 results = []
 
 for scenario in scenarios:
+
     print("\n--- Scenario", scenario["id"], "---")
     print(scenario["description"])
     print("1:", scenario["options"][0])
@@ -211,6 +215,7 @@ for scenario in scenarios:
 
    
     results.append({
+        "user_id": user_id,
         "scenario_id": scenario["id"],
         "scenario_description": scenario["description"],
         "human_decision": human_decision,
@@ -224,7 +229,7 @@ with open("morality_simulation_results.csv", mode="w", newline="", encoding="utf
     writer.writeheader()
     writer.writerows(results)
 
-print("\n✅ All results saved to 'morality_simulation_results.csv'")
+print("\n All results saved to 'morality_simulation_results.csv'")
 
 
 # Simple ML Analysis
@@ -254,4 +259,4 @@ model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 
 # Accuracy
-print("\n🤖 ML Model Accuracy:", accuracy_score(y_test, y_pred))
+print("\n ML Model Accuracy:", accuracy_score(y_test, y_pred))
