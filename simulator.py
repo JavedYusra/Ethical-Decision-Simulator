@@ -1,9 +1,9 @@
 import csv
-# -----------------------------
-# Human vs AI Morality Simulator
-# -----------------------------
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 
-# Step 1: Define 20 dilemmas
 scenarios = [
     {
         "id": 1,
@@ -167,29 +167,28 @@ scenarios = [
     }
 ]
 
-# Step 2: Define ethical decision-making functions
+
 def utilitarian_decision(scenario):
     """Utilitarianism: choose the option that maximizes the overall good."""
-    return scenario["options"][0]  # simplified assumption
+    return scenario["options"][0]  
 
 def deontological_decision(scenario):
     """Deontology: follow rules, avoid direct harm or unfairness."""
-    return scenario["options"][1]  # simplified assumption
+    return scenario["options"][1]  
 
 def virtue_ethics_decision(scenario):
     """Virtue ethics: act according to compassion and moral character."""
-    return scenario["options"][0]  # simplified assumption
+    return scenario["options"][0] 
 
 results = []
 
-# Step 3: Run simulator
 for scenario in scenarios:
     print("\n--- Scenario", scenario["id"], "---")
     print(scenario["description"])
     print("1:", scenario["options"][0])
     print("2:", scenario["options"][1])
 
-    # AI decisions
+    
     ai_utilitarian = utilitarian_decision(scenario)
     ai_deontological = deontological_decision(scenario)
     ai_virtue = virtue_ethics_decision(scenario)
@@ -199,7 +198,7 @@ for scenario in scenarios:
     print("Deontological:", ai_deontological)
     print("Virtue Ethics:", ai_virtue)
 
-    # Human input
+  
     user_choice = input("\nYour Turn - Choose option 1 or 2: ")
     if user_choice == "1":
         human_decision = scenario["options"][0]
@@ -210,7 +209,7 @@ for scenario in scenarios:
 
     print("You chose:", human_decision)
 
-    # Store result
+   
     results.append({
         "scenario_id": scenario["id"],
         "scenario_description": scenario["description"],
@@ -220,10 +219,39 @@ for scenario in scenarios:
         "ai_virtue": ai_virtue
     })
 
-# Step 6: Save results to CSV
 with open("morality_simulation_results.csv", mode="w", newline="", encoding="utf-8") as file:
     writer = csv.DictWriter(file, fieldnames=results[0].keys())
     writer.writeheader()
     writer.writerows(results)
 
 print("\n✅ All results saved to 'morality_simulation_results.csv'")
+
+
+# Simple ML Analysis
+df = pd.read_csv("morality_simulation_results.csv")
+
+# Convert decisions into labels (0 or 1)
+df["label"] = df["human_decision"].apply(
+    lambda x: 0 if x == df.loc[0, "ai_utilitarian"] else 1
+    if x != "Invalid choice" else -1
+)
+
+# Keep only valid rows
+df = df[df["label"] != -1]
+
+# Features: scenario ID (simple for now)
+X = df[["scenario_id"]]
+y = df["label"]
+
+# Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Train model
+model = DecisionTreeClassifier()
+model.fit(X_train, y_train)
+
+# Predict
+y_pred = model.predict(X_test)
+
+# Accuracy
+print("\n🤖 ML Model Accuracy:", accuracy_score(y_test, y_pred))
