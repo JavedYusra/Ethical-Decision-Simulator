@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Ethical Decision Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-center">Ethical Decision Simulator</h1>
+
+    <form method="POST" action="{{ url_for('submit') }}">
+      <div class="mb-4">
+        <label class="block font-semibold mb-1">Enter your Name or ID:</label>
+        <input type="text" name="user_id" class="w-full border p-2 rounded" required>
+      </div>
+
+      {% for scenario in scenarios %}
+        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+          <h2 class="font-semibold">Scenario {{ scenario.id }}</h2>
+          <p class="mb-2 text-sm text-gray-700">{{ scenario.description }}</p>
+          <label class="block mb-1">
+            <input type="radio" name="scenario_{{ scenario.id }}" value="1" required>
+            {{ scenario.options[0] }}
+          </label>
+          <label class="block">
+            <input type="radio" name="scenario_{{ scenario.id }}" value="2">
+            {{ scenario.options[1] }}
+          </label>
+        </div>
+      {% endfor %}
+
+      <div class="flex justify-center">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Submit</button>
+      </div>
+    </form>
+
+    <div class="mt-6 text-sm text-gray-600">
+      <p>You can also run the CLI version: <code>python simulator.py</code></p>
+    </div>
+  </div>
+</body>
+</html>

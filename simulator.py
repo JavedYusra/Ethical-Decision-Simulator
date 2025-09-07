@@ -1,11 +1,14 @@
+
+# simulator.py
 import csv
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import make_pipeline
 from sklearn.metrics import accuracy_score
 
-user_id = input("Enter your name or ID: ")
-
+# ---------- scenarios (exact as you provided) ----------
 scenarios = [
     {
         "id": 1,
@@ -169,94 +172,142 @@ scenarios = [
     }
 ]
 
-
+# ---------- decision functions ----------
 def utilitarian_decision(scenario):
     """Utilitarianism: choose the option that maximizes the overall good."""
-    return scenario["options"][0]  
+    return scenario["options"][0]
 
 def deontological_decision(scenario):
     """Deontology: follow rules, avoid direct harm or unfairness."""
-    return scenario["options"][1]  
+    return scenario["options"][1]
 
 def virtue_ethics_decision(scenario):
     """Virtue ethics: act according to compassion and moral character."""
-    return scenario["options"][0] 
+    return scenario["options"][0]
 
+# ---------- CLI runner (preserves your original console flow) ----------
+def run_cli(save_path="morality_simulation_results.csv"):
+    user_id = input("Enter your name or ID: ")
 
-results = []
+    results = []
 
-for scenario in scenarios:
+    for scenario in scenarios:
 
-    print("\n--- Scenario", scenario["id"], "---")
-    print(scenario["description"])
-    print("1:", scenario["options"][0])
-    print("2:", scenario["options"][1])
+        print("\n--- Scenario", scenario["id"], "---")
+        print(scenario["description"])
+        print("1:", scenario["options"][0])
+        print("2:", scenario["options"][1])
 
-    
-    ai_utilitarian = utilitarian_decision(scenario)
-    ai_deontological = deontological_decision(scenario)
-    ai_virtue = virtue_ethics_decision(scenario)
+        ai_utilitarian = utilitarian_decision(scenario)
+        ai_deontological = deontological_decision(scenario)
+        ai_virtue = virtue_ethics_decision(scenario)
 
-    print("\nAI Ethical Frameworks:")
-    print("Utilitarian:", ai_utilitarian)
-    print("Deontological:", ai_deontological)
-    print("Virtue Ethics:", ai_virtue)
+        print("\nAI Ethical Frameworks:")
+        print("Utilitarian:", ai_utilitarian)
+        print("Deontological:", ai_deontological)
+        print("Virtue Ethics:", ai_virtue)
 
-  
-    user_choice = input("\nYour Turn - Choose option 1 or 2: ")
-    if user_choice == "1":
-        human_decision = scenario["options"][0]
-    elif user_choice == "2":
-        human_decision = scenario["options"][1]
+        user_choice = input("\nYour Turn - Choose option 1 or 2: ")
+        if user_choice == "1":
+            human_decision = scenario["options"][0]
+        elif user_choice == "2":
+            human_decision = scenario["options"][1]
+        else:
+            human_decision = "Invalid choice"
+
+        print("You chose:", human_decision)
+
+        results.append({
+            "user_id": user_id,
+            "scenario_id": scenario["id"],
+            "scenario_description": scenario["description"],
+            "human_decision": human_decision,
+            "ai_utilitarian": ai_utilitarian,
+            "ai_deontological": ai_deontological,
+            "ai_virtue": ai_virtue
+        })
+
+    # Save results (same as your original)
+    if results:
+        with open(save_path, mode="w", newline="", encoding="utf-8") as file:
+            writer = csv.DictWriter(file, fieldnames=results[0].keys())
+            writer.writeheader()
+            writer.writerows(results)
+
+        print("\n All results saved to '{}'".format(save_path))
+
+        # Run analysis/training like your original code did after saving
+        acc = analyze_results(save_path, preserve_original_encoding=False)
+        if acc is not None:
+            print("\n Upgraded ML Model Accuracy:", acc)
     else:
-        human_decision = "Invalid choice"
+        print("No results to save.")
 
-    print("You chose:", human_decision)
+# ---------- analysis + ML (two variants for label encoding) ----------
+def analyze_results(csv_path="morality_simulation_results.csv", preserve_original_encoding=False):
+    """
+    Reads csv_path and runs the same ML pipeline as your original script:
+    - label encoding (two options)
+        - preserve_original_encoding=True -> uses the original (probably-buggy)
+          encoding that compares to df.loc[0, 'ai_utilitarian'] (keeps exact original behavior)
+        - preserve_original_encoding=False -> corrected behavior: compare each row to its own ai_utilitarian
+    - features: concatenation of AI framework decisions
+    - pipeline: CountVectorizer + DecisionTreeClassifier
+    - returns accuracy (float) or None if not enough data
+    """
+    try:
+        df = pd.read_csv(csv_path)
+    except FileNotFoundError:
+        print("CSV file not found:", csv_path)
+        return None
 
-   
-    results.append({
-        "user_id": user_id,
-        "scenario_id": scenario["id"],
-        "scenario_description": scenario["description"],
-        "human_decision": human_decision,
-        "ai_utilitarian": ai_utilitarian,
-        "ai_deontological": ai_deontological,
-        "ai_virtue": ai_virtue
-    })
+    # Label encoding
+    if preserve_original_encoding:
+        # PRESERVE EXACT ORIGINAL: uses df.loc[0, "ai_utilitarian"]
+        if "ai_utilitarian" not in df.columns:
+            print("Missing expected column 'ai_utilitarian' for original-preserve encoding.")
+            return None
+        first_util = df.loc[0, "ai_utilitarian"]
+        df["label"] = df["human_decision"].apply(
+            lambda x: 0 if x == first_util else 1
+            if x != "Invalid choice" else -1
+        )
+    else:
+        # CORRECTED: compare each row to its own ai_utilitarian
+        df["label"] = df.apply(
+            lambda row: 0 if row["human_decision"] == row["ai_utilitarian"]
+            else (1 if row["human_decision"] != "Invalid choice" else -1),
+            axis=1
+        )
 
-with open("morality_simulation_results.csv", mode="w", newline="", encoding="utf-8") as file:
-    writer = csv.DictWriter(file, fieldnames=results[0].keys())
-    writer.writeheader()
-    writer.writerows(results)
+    # Remove invalid rows
+    df = df[df["label"] != -1]
 
-print("\n All results saved to 'morality_simulation_results.csv'")
+    if df.shape[0] < 2:
+        print("Not enough valid rows to train/test (need at least 2). Rows available:", df.shape[0])
+        return None
 
+    # Feature combination (same as your original)
+    df["features"] = (
+        df["ai_utilitarian"] + " | " +
+        df["ai_deontological"] + " | " +
+        df["ai_virtue"]
+    )
 
-# Simple ML Analysis
-df = pd.read_csv("morality_simulation_results.csv")
+    X = df["features"]
+    y = df["label"]
 
-# Convert decisions into labels (0 or 1)
-df["label"] = df["human_decision"].apply(
-    lambda x: 0 if x == df.loc[0, "ai_utilitarian"] else 1
-    if x != "Invalid choice" else -1
-)
+    # Split + pipeline (same components you used)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Keep only valid rows
-df = df[df["label"] != -1]
+    model = make_pipeline(CountVectorizer(), DecisionTreeClassifier())
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
 
-# Features: scenario ID (simple for now)
-X = df[["scenario_id"]]
-y = df["label"]
+    acc = accuracy_score(y_test, y_pred)
+    return acc
 
-# Train/test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-# Train model
-model = DecisionTreeClassifier()
-model.fit(X_train, y_train)
-
-# Predict
-y_pred = model.predict(X_test)
-
-# Accuracy
-print("\n ML Model Accuracy:", accuracy_score(y_test, y_pred))
+# Only run CLI if you want console mode, not when Flask imports it
+if __name__ == "__main__":
+    print("Running in console mode...")
+    run_cli()

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Simulation Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+  <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-4 text-center">Simulation Results</h1>
+
+    <div class="overflow-x-auto">
+      {{ table_html|safe }}
+    </div>
+
+    <p class="mt-4 text-center font-semibold">
+      Model Accuracy: <span class="text-blue-600">{{ accuracy }}</span>
+    </p>
+
+    <div class="flex justify-center mt-6">
+      <a href="{{ url_for('home') }}" 
+         class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+         Back to Home
+      </a>
+    </div>
+  </div>
+</body>
+</html>
