@@ -1,48 +1,63 @@
 import React, { useState } from "react";
 
-export default function Simulator() {
+function Simulator() {
   const [scenario, setScenario] = useState("");
-  const [response, setResponse] = useState("");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSimulate = async () => {
-    // later this will call the backend API
-    if (!scenario.trim()) {
-      setResponse("⚠️ Please enter a scenario first.");
-      return;
-    }
+    if (!scenario.trim()) return;
+    setLoading(true);
+    setResult(null);
 
-    // Temporary placeholder until backend connects
-    setResponse("🤖 AI Decision: Based on ethical principles, I recommend...");
+    try {
+      const response = await fetch("http://127.0.0.1:8000/simulate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ scenario }),
+      });
+
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      console.error("Error:", error);
+      setResult({ decision: "Error connecting to backend" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="bg-white text-gray-900 p-8 rounded-lg shadow-lg max-w-xl w-full">
-          <h2 className="text-2xl font-bold mb-4 text-center text-blue-600">
-            Ethical Decision Simulator
-          </h2>
-          <textarea
-            value={scenario}
-            onChange={(e) => setScenario(e.target.value)}
-            placeholder="Enter a moral dilemma or scenario..."
-            className="w-full h-32 p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-          />
-          <button
-            onClick={handleSimulate}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition"
-          >
-            Simulate Decision
-          </button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6">
+      <h1 className="text-4xl font-bold mb-6">Ethical Decision Simulator</h1>
 
-          {response && (
-            <div className="mt-6 p-4 border-t text-gray-800 bg-gray-50 rounded">
-              <p>{response}</p>
-            </div>
-          )}
+      <textarea
+        className="w-full max-w-lg p-3 rounded-lg text-black mb-4"
+        rows="5"
+        placeholder="Enter your ethical scenario here..."
+        value={scenario}
+        onChange={(e) => setScenario(e.target.value)}
+      />
+
+      <button
+        onClick={handleSimulate}
+        className="px-6 py-3 bg-yellow-400 text-black font-bold rounded-lg shadow-lg hover:bg-yellow-300 transition"
+        disabled={loading}
+      >
+        {loading ? "Simulating..." : "Run Simulation"}
+      </button>
+
+      {result && (
+        <div className="mt-6 p-4 bg-white text-black rounded-lg shadow-lg max-w-lg w-full">
+          <h2 className="text-xl font-semibold mb-2">Simulation Result:</h2>
+          <p><strong>Scenario:</strong> {result.scenario}</p>
+          <p><strong>Decision:</strong> {result.decision}</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
-export { Simulator };
+
+export default Simulator;
